@@ -1,0 +1,20 @@
+doctype
+html
+	head
+		meta(charset="utf-8")
+		meta(name="viewport" content="width=device-width,initial-scale=1")
+		title Picturefill HTML
+		script(type='text/javascript').
+			document.createElement("picture");
+		script(type="text/javasript" src="picturefill.min.js" async="true")
+	body
+		each breakPointsArray, originalFile in data
+			<!--Picturefill element definition for file #{originalFile} -->
+			picture
+				//[if IE 9]><video style="display: none;"><![endif]
+				- for (var i=0; i<breakPointsArray.length - 1; i++)
+					source(srcset="#{breakPointsArray[i].path}" media="#{breakPointsArray[i].mq}")
+				//[if IE 9]></video><![endif]
+
+				img(srcset="#{breakPointsArray[breakPointsArray.length - 1].path}" alt="Lorem ipsum dolor sit amet")
+			br

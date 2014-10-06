@@ -11,6 +11,8 @@
 var _ = require('underscore');
 var path = require('path');
 var gm = require('gm');
+var jade = require('jade');
+var fs = require('fs');
 
 
 module.exports = function(grunt) {
@@ -32,19 +34,13 @@ module.exports = function(grunt) {
 
         var _resizedFilesCount = 0;
 
-        var _breakpoints = [];
-
         var _optionsErrCount = 0;
+
+        var _filesBreakpointList = {};
 
 
         // Merge task-specific and/or target-specific options with these defaults.
         var _options = this.options({
-            size: {
-                width: 100,
-                height: 100
-            },
-            quality: 100,
-            prefix: '',
             picturefill: [{
                 breakpoint: '320px',
                 prefix: 'xs',
@@ -69,7 +65,9 @@ module.exports = function(grunt) {
                     height: 1024
                 },
                 quality: 100
-            }]
+            }],
+            createSample: true,
+            sampleOutputPath: './'
         });
 
         /** 
@@ -91,31 +89,37 @@ module.exports = function(grunt) {
         };
 
         /**
-         * Function to return the lowest breakpoint available
+         * Function to sort breakpoints available
          * @return {Number}
          */
-        var _getLowestBreakpoint = function() {
+        var _sortBreakpoints = function() {
+            _.each(_filesBreakpointList, function(el, index, list) {
+                list[index] = _.sortBy(el, function(o) {
+                    return parseInt(o.bp);
+                }).reverse();
+            });
 
-            //Check if there exists any errors and abort.
-            if (_optionsErrCount > 0) {
-                grunt.fail.warn('PLEASE MAKE SURE ALL THE OPTIONS ARE CLEARLY SPECIFIED');
-            }
+            return _filesBreakpointList;
+        };
 
-            //Returns an array of breakpoints in descending order
-            _breakpoints = _.sortBy(_.map(_options.picturefill, function(value, key) {
-                var breakpoint = value.breakpoint;
-                if (typeof breakpoint === 'string') {
-                    breakpoint = breakpoint.match(/\d+/g);
-                    return breakpoint[0];
-                } else if (typeof breakpoint === 'number') {
-                    return breakpoint;
+
+        var _renderPicturefillTpl = function() {
+            var html = jade.renderFile('./template/picturefill.jade', {
+                pretty: true,
+                data: _filesBreakpointList
+            });
+
+            grunt.file.mkdir(path.join(_options.sampleOutputPath, 'picturefill_sample'));
+
+            grunt.file.copy(path.join('template', 'picturefill.min.js'), path.join(_options.sampleOutputPath, 'picturefill_sample', 'picturefill.min.js'));
+
+            fs.writeFile(path.join(_options.sampleOutputPath, 'picturefill_sample', 'index.html'), html, function(err) {
+                if (err) {
+                    grunt.fail.warn('Sample Picturefill template could not be created');
+                } else {
+                    grunt.log.ok('Sample Picturefill template created successfully');
                 }
-            }), function(num) {
-                return num;
-            }).reverse();
-
-            //Return minimum breakpoint to be used later
-            return _.min(_breakpoints);
+            });
         };
 
         /**
@@ -162,10 +166,16 @@ module.exports = function(grunt) {
             }
         };
 
+
+
+
+
         var _gmResizeFiles = function(fileObj, option, fileName, fileExt, keepOriginalDims, width, height) {
 
             var imgWidth = (keepOriginalDims === true) ? width : option.size.width;
             var imgHeight = (keepOriginalDims === true) ? height : option.size.height;
+
+            var originalFileName = path.basename(fileObj.src, fileExt);
 
             gm(fileObj.src)
                 .resize(imgWidth, imgHeight)
@@ -173,9 +183,32 @@ module.exports = function(grunt) {
                 .write(path.join(fileObj.dest, fileName + fileExt), function(err) {
                     if (!err) {
                         _resizedFilesCount++;
+
+                        if (!_filesBreakpointList.hasOwnProperty(originalFileName)) {
+                            _filesBreakpointList[originalFileName] = [];
+                            _filesBreakpointList[originalFileName].push({
+                                mq: '(min-width: ' + option.breakpoint + ')',
+                                path: path.join(fileObj.dest, fileName + fileExt),
+                                ext: fileExt,
+                                bp: option.breakpoint.match(/\d+/)[0]
+                            });
+                        } else {
+                            _filesBreakpointList[originalFileName].push({
+                                mq: '(min-width: ' + option.breakpoint + ')',
+                                path: path.join(fileObj.dest, fileName + fileExt),
+                                ext: fileExt,
+                                bp: option.breakpoint.match(/\d+/)[0]
+                            });
+                        }
+
                         if (_resizedFilesCount >= (_srcFilesCount * _options.picturefill.length)) {
+                            if (_options.createSample === true) {
+                                _sortBreakpoints();
+                                _renderPicturefillTpl();
+                            }
                             _done(true);
                         }
+
                     } else {
                         console.log(err);
                         _done(false);
@@ -253,7 +286,11 @@ module.exports = function(grunt) {
         });
 
         _sanitizeOptions();
-        _getLowestBreakpoint();
+
+        //Check if there exists any errors and abort.
+        if (_optionsErrCount > 0) {
+            grunt.fail.warn('PLEASE MAKE SURE ALL THE OPTIONS ARE CLEARLY SPECIFIED');
+        }
 
         //Itterate over all the options and necessary files.
         _gmItterateOptions();

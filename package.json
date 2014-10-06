@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "gm": "^1.16.0",
+    "jade": "^1.7.0",
     "underscore": "^1.7.0"
   }
 }
