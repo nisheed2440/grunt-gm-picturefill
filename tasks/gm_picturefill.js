@@ -4,6 +4,7 @@
  *
  * Copyright (c) 2014 Nisheed Jagadish
  * Licensed under the MIT license.
+ * Credit to Scott Jehl for his picturefill plugin
  */
 
 'use strict';
@@ -12,7 +13,7 @@ var _ = require('underscore');
 var path = require('path');
 var gm = require('gm');
 var jade = require('jade');
-var fs = require('fs');
+var fs = require('fs-extra');
 
 
 module.exports = function(grunt) {
@@ -20,7 +21,7 @@ module.exports = function(grunt) {
     // Please see the Grunt documentation for more information regarding task
     // creation: http://gruntjs.com/creating-tasks
 
-    grunt.registerMultiTask('gm_picturefill', 'Plugin to crop or resize images to work with picturefill plugin or the picture element', function() {
+    grunt.registerMultiTask('gm_picturefill', 'Plugin to resize images to work with picturefill plugin or the picture element', function() {
 
         var _this = this;
 
@@ -65,8 +66,18 @@ module.exports = function(grunt) {
                     height: 1024
                 },
                 quality: 100
+            }, {
+                breakpoint: '1280px',
+                prefix: 'lg',
+                size: {
+                    width: 1280,
+                    height: 1280
+                },
+                quality: 100
             }],
+            //Create sample output using the files
             createSample: true,
+            //Create sample output at the root folder
             sampleOutputPath: './'
         });
 
@@ -104,21 +115,34 @@ module.exports = function(grunt) {
 
 
         var _renderPicturefillTpl = function() {
+
+            //console.log(JSON.stringify(_filesBreakpointList, null, 4));
+
             var html = jade.renderFile('./template/picturefill.jade', {
                 pretty: true,
                 data: _filesBreakpointList
             });
 
-            grunt.file.mkdir(path.join(_options.sampleOutputPath, 'picturefill_sample'));
+            var outputPath = path.join(_options.sampleOutputPath, 'picturefill_sample');
+            var inputPath = path.join('template', 'assets');
+            //Create folder if not exists
+            grunt.file.mkdir(outputPath);
 
-            grunt.file.copy(path.join('template', 'picturefill.min.js'), path.join(_options.sampleOutputPath, 'picturefill_sample', 'picturefill.min.js'));
 
-            fs.writeFile(path.join(_options.sampleOutputPath, 'picturefill_sample', 'index.html'), html, function(err) {
+            fs.copy(inputPath, outputPath, function(err) {
                 if (err) {
-                    grunt.fail.warn('Sample Picturefill template could not be created');
-                } else {
-                    grunt.log.ok('Sample Picturefill template created successfully');
+                    return console.error(err);
                 }
+                //Create index.html inside the directory
+                fs.writeFile(path.join(outputPath, 'index.html'), html, function(err) {
+                    if (err) {
+                        grunt.fail.warn('Sample Picturefill template could not be created');
+                        _done(false);
+                    } else {
+                        grunt.log.ok('Sample Picturefill template created successfully');
+                        _done(true);
+                    }
+                });
             });
         };
 
@@ -149,6 +173,10 @@ module.exports = function(grunt) {
             return false;
         };
 
+        /**
+         * Functiont to itterate over the picturefill options array
+         * @return {[type]} [description]
+         */
         var _gmItterateOptions = function() {
             for (var i = 0; i < _options.picturefill.length; i++) {
                 _gmItterateFiles(_options.picturefill[i]);
@@ -166,10 +194,17 @@ module.exports = function(grunt) {
             }
         };
 
-
-
-
-
+        /**
+         * Function to resize image files asynchronously
+         * @param  {Object} fileObj          Input file object
+         * @param  {Object} option           Current picturefill option
+         * @param  {String} fileName         Name of the current file being processed
+         * @param  {String} fileExt          Current file extension
+         * @param  {Boolean} keepOriginalDims Flag to set original dimensions
+         * @param  {Number} width            original width
+         * @param  {Number} height           original height
+         * @return {null}
+         */
         var _gmResizeFiles = function(fileObj, option, fileName, fileExt, keepOriginalDims, width, height) {
 
             var imgWidth = (keepOriginalDims === true) ? width : option.size.width;
@@ -186,27 +221,23 @@ module.exports = function(grunt) {
 
                         if (!_filesBreakpointList.hasOwnProperty(originalFileName)) {
                             _filesBreakpointList[originalFileName] = [];
-                            _filesBreakpointList[originalFileName].push({
-                                mq: '(min-width: ' + option.breakpoint + ')',
-                                path: path.join(fileObj.dest, fileName + fileExt),
-                                ext: fileExt,
-                                bp: option.breakpoint.match(/\d+/)[0]
-                            });
-                        } else {
-                            _filesBreakpointList[originalFileName].push({
-                                mq: '(min-width: ' + option.breakpoint + ')',
-                                path: path.join(fileObj.dest, fileName + fileExt),
-                                ext: fileExt,
-                                bp: option.breakpoint.match(/\d+/)[0]
-                            });
                         }
+
+                        _filesBreakpointList[originalFileName].push({
+                            mq: '(min-width: ' + option.breakpoint + ')',
+                            path: path.join(fileObj.dest, fileName + fileExt),
+                            ext: fileExt,
+                            bp: option.breakpoint.match(/\d+/)[0]
+                        });
 
                         if (_resizedFilesCount >= (_srcFilesCount * _options.picturefill.length)) {
                             if (_options.createSample === true) {
                                 _sortBreakpoints();
                                 _renderPicturefillTpl();
+                            } else {
+                                _done(true);
                             }
-                            _done(true);
+
                         }
 
                     } else {
@@ -285,6 +316,7 @@ module.exports = function(grunt) {
             });
         });
 
+        //Sanitize all the options
         _sanitizeOptions();
 
         //Check if there exists any errors and abort.

@@ -3,18 +3,48 @@ html
 	head
 		meta(charset="utf-8")
 		meta(name="viewport" content="width=device-width,initial-scale=1")
-		title Picturefill HTML
-		script(type='text/javascript').
-			document.createElement("picture");
-		script(type="text/javasript" src="picturefill.min.js" async="true")
+		title Picturefill HTML | grunt-gm-picturefill
+		link(rel="stylesheet" type="text/css" href="css/bootstrap.min.css")
+		link(rel="stylesheet" type="text/css" href="css/styles.css")
+		script(type="text/javascript" src="js/picturefill.js")
 	body
-		each breakPointsArray, originalFile in data
-			<!--Picturefill element definition for file #{originalFile} -->
-			picture
-				//[if IE 9]><video style="display: none;"><![endif]
-				- for (var i=0; i<breakPointsArray.length - 1; i++)
-					source(srcset="#{breakPointsArray[i].path}" media="#{breakPointsArray[i].mq}")
-				//[if IE 9]></video><![endif]
 
-				img(srcset="#{breakPointsArray[breakPointsArray.length - 1].path}" alt="Lorem ipsum dolor sit amet")
-			br
+		.container
+			.row
+				.col-xs-12(class=['col-md-10','col-md-offset-1','pf-sample-body'])
+					h2.text-left Picturefill Sample
+					hr
+					.text-center
+						p To find out how to use Picturefill on your sites, visit the project and demo site:
+						p 
+							a(href="http://scottjehl.github.com/picturefill/") Picturefill Documentation, Downloads, and Demos Site
+					//-Example code for testing
+					picture.text-center
+						//[if IE 9]><video style="display: none;"><![endif]
+						source(srcset="img/extralarge.jpg" media="(min-width:1280px)")
+						source(srcset="img/large.jpg" media="(min-width:1024px)")
+						source(srcset="img/medium.jpg" media="(min-width:768px)")
+						//[if IE 9]></video><![endif]
+						img(srcset="img/small.jpg" alt="picturefill example")
+
+					hr
+					h2.text-left HTML for resized files
+					p.text-muted Copy paste the HTML in your template modifying the image path
+					hr
+					each breakPointsArray, originalFile in data
+						.muted
+							pre
+								code
+									= '<!--Picturefill element definition for file ' + originalFile + ' -->\n'
+									=	'<picture>\n'
+										=	'\t<!--[if IE 9]><video style="display: none;"><![endif]-->\n'
+											- for (var i=0; i<breakPointsArray.length - 1; i++)
+												=	'\t\t<source srcset="' + breakPointsArray[i].path + '" media="'+ breakPointsArray[i].mq +'">\n'
+										=	'\t<!--[if IE 9]></video><![endif]-->\n\n'
+										=	'\t<img srcset="'+ breakPointsArray[breakPointsArray.length - 1].path +'" alt="Lorem ipsum dolor sit amet">\n'
+									=	'</picture>'
+
+
+		script(type='text/javascript' src="js/jquery-1.11.1.js")
+		script(type='text/javascript' src="js/bootstrap.min.js")
+				
