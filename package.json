@@ -9,7 +9,12 @@
     "url": ""
   },
   "keywords": [
-    "gruntplugin"
+    "gruntplugin",
+    "node",
+    "image",
+    "resize",
+    "picturefill",
+    "grunt"
   ],
   "main": "Gruntfile.js",
   "engines": {
