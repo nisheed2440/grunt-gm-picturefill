@@ -1,6 +1,6 @@
 {
   "name": "grunt-gm-picturefill",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Plugin to crop or resize images to work with picturefill plugin or the picture element",
   "repository": "http://www.github.com/nisheed2440/grunt-gm-picturefill",
   "author": {

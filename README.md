@@ -2,6 +2,11 @@
 
 > Plugin to resize images to work with picturefill plugin or the picture element providing sample output for easy reference
 
+## Picturefill by Scott Jehl
+To find out how to use Picturefill on your sites, visit the project and demo site:
+
+[Picturefill Documentation, Downloads, and Demos Site](http://scottjehl.github.com/picturefill/)
+
 ## Getting Started
 First download and install [GraphicsMagick](http://www.graphicsmagick.org/). In Mac OS X, you can simply use [Homebrew](http://mxcl.github.io/homebrew/) and do:
 
